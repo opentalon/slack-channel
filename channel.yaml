@@ -1,0 +1,116 @@
+kind: channel
+version: 1
+id: slack
+name: Slack
+
+capabilities:
+  threads: true
+  files: true
+  reactions: true
+  edits: true
+  max_message_length: 4000
+
+required_env: [SLACK_APP_TOKEN, SLACK_BOT_TOKEN]
+
+init:
+  - name: auth_test
+    method: POST
+    url: https://slack.com/api/auth.test
+    headers:
+      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+    store:
+      bot_user_id: "user_id"
+
+  - name: connect
+    method: POST
+    url: https://slack.com/api/apps.connections.open
+    headers:
+      Authorization: "Bearer {{env.SLACK_APP_TOKEN}}"
+    store:
+      ws_url: "url"
+
+connection:
+  url: "{{self.ws_url}}"
+  reconnect:
+    enabled: true
+    backoff_initial: 1s
+    backoff_max: 30s
+    re_init: [connect]
+
+inbound:
+  ack:
+    when: "envelope_id"
+    send: '{"envelope_id":"{{frame.envelope_id}}"}'
+
+  event_path: "payload.event"
+  event_types: [app_mention]
+  always_process_when:
+    field: "channel_type"
+    equals: "im"
+
+  skip:
+    - field: "user"
+      equals: "{{self.bot_user_id}}"
+    - field: "bot_id"
+      not_empty: true
+    - field: "subtype"
+      not_empty: true
+      except: [thread_broadcast]
+
+  mapping:
+    conversation_id: "channel"
+    sender_id: "user"
+    content: "text"
+    thread_id:
+      field: "thread_ts"
+      fallback: "ts"
+    metadata:
+      ts: "ts"
+
+  transforms:
+    - type: replace
+      pattern: "<@{{self.bot_user_id}}>"
+      replacement: ""
+    - type: trim
+
+  dedup:
+    key: "{{event.channel}}:{{event.ts}}"
+    ttl: 10m
+
+outbound:
+  chunking:
+    max_length: 4000
+  send:
+    method: POST
+    url: https://slack.com/api/chat.postMessage
+    headers:
+      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+      Content-Type: application/json
+    body: '{"channel":"{{msg.conversation_id}}","text":"{{msg.content}}","thread_ts":"{{msg.thread_id}}"}'
+
+hooks:
+  on_receive:
+    - method: POST
+      url: https://slack.com/api/reactions.add
+      headers:
+        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Content-Type: application/json
+      body: '{"channel":"{{event.conversation_id}}","timestamp":"{{event.metadata.ts}}","name":"{{config.ack_reaction}}"}'
+      when: "{{config.ack_reaction}}"
+  on_response:
+    - method: POST
+      url: https://slack.com/api/reactions.remove
+      headers:
+        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Content-Type: application/json
+      body: '{"channel":"{{msg.conversation_id}}","timestamp":"{{msg.metadata.ts}}","name":"{{config.ack_reaction}}"}'
+      when: "{{config.ack_reaction}}"
+    - method: POST
+      url: https://slack.com/api/reactions.add
+      headers:
+        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Content-Type: application/json
+      body: '{"channel":"{{msg.conversation_id}}","timestamp":"{{msg.metadata.ts}}","name":"{{config.done_reaction}}"}'
+      when: "{{config.done_reaction}}"
+
+tools_file: tools.yaml
