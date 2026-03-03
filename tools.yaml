@@ -1,0 +1,97 @@
+- plugin: slack
+  description: "Slack workspace integration — post messages, react, read threads"
+  action: post_message
+  action_description: "Post a message to a Slack channel or thread"
+  method: POST
+  url: https://slack.com/api/chat.postMessage
+  body: '{"channel":"{{args.channel}}","text":"{{args.text}}","thread_ts":"{{args.thread_ts}}"}'
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+    Content-Type: application/json
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: channel
+      description: "Channel ID (e.g. C1234567890)"
+      required: true
+    - name: text
+      description: "Message text (supports Slack mrkdwn formatting)"
+      required: true
+    - name: thread_ts
+      description: "Thread timestamp to reply in (omit for top-level)"
+      required: false
+
+- plugin: slack
+  action: add_reaction
+  action_description: "Add an emoji reaction to a message"
+  method: POST
+  url: https://slack.com/api/reactions.add
+  body: '{"channel":"{{args.channel}}","timestamp":"{{args.timestamp}}","name":"{{args.emoji}}"}'
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+    Content-Type: application/json
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: channel
+      description: Channel ID
+      required: true
+    - name: timestamp
+      description: Message timestamp
+      required: true
+    - name: emoji
+      description: "Emoji name without colons (e.g. thumbsup)"
+      required: true
+
+- plugin: slack
+  action: read_thread
+  action_description: "Read all replies in a Slack thread"
+  method: GET
+  url: "https://slack.com/api/conversations.replies?channel={{args.channel}}&ts={{args.thread_ts}}"
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: channel
+      description: Channel ID
+      required: true
+    - name: thread_ts
+      description: Parent message timestamp
+      required: true
+
+- plugin: slack
+  action: update_message
+  action_description: "Edit a previously sent message"
+  method: POST
+  url: https://slack.com/api/chat.update
+  body: '{"channel":"{{args.channel}}","ts":"{{args.timestamp}}","text":"{{args.text}}"}'
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+    Content-Type: application/json
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: channel
+      description: Channel ID
+      required: true
+    - name: timestamp
+      description: Timestamp of message to edit
+      required: true
+    - name: text
+      description: New message text
+      required: true
+
+- plugin: slack
+  action: get_user_info
+  action_description: "Get a Slack user's profile"
+  method: GET
+  url: "https://slack.com/api/users.info?user={{args.user_id}}"
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: user_id
+      description: "Slack user ID (e.g. U1234567890)"
+      required: true
