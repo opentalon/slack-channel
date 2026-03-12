@@ -95,3 +95,33 @@
     - name: user_id
       description: "Slack user ID (e.g. U1234567890)"
       required: true
+
+- plugin: slack
+  action: list_users
+  action_description: "List Slack workspace users to find a user by name or display name"
+  method: GET
+  url: "https://slack.com/api/users.list?limit={{args.limit}}"
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: limit
+      description: "Maximum number of users to return (default 200)"
+      required: false
+
+- plugin: slack
+  action: open_dm
+  action_description: "Open a direct message channel with a user (returns the DM channel ID for use with post_message)"
+  method: POST
+  url: https://slack.com/api/conversations.open
+  body: '{"users":"{{args.user_id}}"}'
+  headers:
+    Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+    Content-Type: application/json
+  required_env:
+    - SLACK_BOT_TOKEN
+  parameters:
+    - name: user_id
+      description: "Slack user ID to open a DM with (e.g. U1234567890)"
+      required: true
