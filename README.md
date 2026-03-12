@@ -6,15 +6,60 @@ YAML-driven Slack channel for [OpenTalon](https://github.com/opentalon/opentalon
 
 1. A Slack app with **Socket Mode** enabled
 2. An **App-Level Token** (`xapp-...`) with `connections:write` scope
-3. A **Bot Token** (`xoxb-...`) with scopes: `chat:write`, `reactions:read`, `reactions:write`, `app_mentions:read`, `channels:history`, `im:history`, `users:read`
+3. A **Bot Token** (`xoxb-...`) with the scopes listed below
 
 ### Creating the Slack App
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app
-2. Under **Socket Mode**, enable it and generate an App-Level Token with `connections:write`
-3. Under **OAuth & Permissions**, add the bot scopes listed above
-4. Under **Event Subscriptions**, subscribe to bot events: `app_mention`, `message.im`
-5. Install the app to your workspace
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**
+2. Give it a name (e.g. `opentalon_bot`) and select your workspace
+
+### Socket Mode
+
+3. Go to **Socket Mode** (left sidebar) → toggle **ON**
+4. Create an App-Level Token with the `connections:write` scope — save the `xapp-...` token
+
+### OAuth & Permissions
+
+5. Go to **OAuth & Permissions** → under **Bot Token Scopes**, add:
+
+| Scope | Why |
+|-------|-----|
+| `app_mentions:read` | Receive @mention events in channels |
+| `chat:write` | Send messages |
+| `channels:history` | Read messages in public channels the bot is in |
+| `channels:join` | Join public channels |
+| `channels:read` | View basic channel info |
+| `groups:history` | Read messages in private channels the bot is in |
+| `groups:read` | View basic private channel info |
+| `im:history` | Read direct messages |
+| `im:read` | View basic DM info |
+| `im:write` | Open DM conversations |
+| `reactions:read` | Read emoji reactions |
+| `reactions:write` | Add/remove emoji reactions |
+| `users:read` | Look up users by name/ID |
+
+### Event Subscriptions
+
+6. Go to **Event Subscriptions** → toggle **ON**
+7. Under **Subscribe to bot events**, add:
+   - `app_mention` — triggers when someone @mentions the bot in a channel
+   - `message.im` — triggers when someone sends a direct message to the bot
+
+### App Home (required for DMs)
+
+8. Go to **App Home** (left sidebar)
+9. Scroll to **Show Tabs** and enable:
+   - **Messages Tab** — check this to allow DMs with the bot
+   - **"Allow users to send Slash commands and messages from the messages tab"** — check this too
+
+> Without the Messages Tab enabled, users will see "Sending messages to this app has been turned off" and DMs won't work.
+
+### Install
+
+10. Go to **OAuth & Permissions** → **Install to Workspace** (or **Reinstall** if updating scopes)
+11. Save the **Bot User OAuth Token** (`xoxb-...`)
+
+> After changing scopes or event subscriptions, you must reinstall the app for changes to take effect.
 
 ## Setup
 
@@ -100,7 +145,7 @@ Set either to empty or omit to disable that reaction.
 
 ## Tools
 
-The channel provides 5 tools that the LLM can call:
+The channel provides 7 tools that the LLM can call:
 
 | Tool | Description |
 |------|-------------|
@@ -108,7 +153,9 @@ The channel provides 5 tools that the LLM can call:
 | `slack.add_reaction` | Add an emoji reaction to a message |
 | `slack.read_thread` | Read all replies in a thread |
 | `slack.update_message` | Edit a previously sent message |
-| `slack.get_user_info` | Get a user's profile |
+| `slack.get_user_info` | Get a user's profile by ID |
+| `slack.list_users` | List workspace users (find users by name) |
+| `slack.open_dm` | Open a DM channel with a user (returns channel ID for `post_message`) |
 
 ## How It Works
 
