@@ -175,4 +175,4 @@ The OpenTalon core's YAML channel runtime executes all of this in-process.
 |------|---------|
 | `channel.yaml` | Channel spec — connection, events, message handling |
 | `tools.yaml` | Tool definitions for LLM function calling |
-| `LICENSE` | MIT License |
+| `LICENSE` | Apache 2.0 License |
