@@ -86,7 +86,7 @@ outbound:
     headers:
       Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
       Content-Type: application/json
-    body: '{"channel":"{{msg.conversation_id}}","text":"{{msg.content}}","thread_ts":"{{msg.thread_id}}"}'
+    body: '{"channel":"{{msg.conversation_id}}","text":"{{msg.content}}","thread_ts":"{{msg.thread_id}}","mrkdwn":true}'
 
 hooks:
   on_receive:
