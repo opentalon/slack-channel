@@ -56,7 +56,7 @@ inbound:
       not_empty: true
     - field: "subtype"
       not_empty: true
-      except: [thread_broadcast]
+      except: [thread_broadcast, file_share]
 
   mapping:
     conversation_id: "channel"
@@ -67,6 +67,16 @@ inbound:
       fallback: "ts"
     metadata:
       ts: "ts"
+
+  media:
+    - when: "files"
+      resolve:
+        mime_type: "{{event.files.0.mimetype}}"
+        name: "{{event.files.0.name}}"
+        steps:
+          - url: "{{event.files.0.url_private}}"
+            headers:
+              Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
 
   transforms:
     - type: replace
