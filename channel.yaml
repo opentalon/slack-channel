@@ -67,6 +67,7 @@ inbound:
       fallback: "ts"
     metadata:
       ts: "ts"
+      profile_token: "user"
 
   media:
     - when: "files"
