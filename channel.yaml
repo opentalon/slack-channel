@@ -99,6 +99,14 @@ outbound:
       Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
       Content-Type: application/json
     body: '{"channel":"{{msg.conversation_id}}","text":"{{msg.content}}","thread_ts":"{{msg.thread_id}}","mrkdwn":true}'
+  send_store_id: "ts"
+  update:
+    method: POST
+    url: https://slack.com/api/chat.update
+    headers:
+      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+      Content-Type: application/json
+    body: '{"channel":"{{msg.conversation_id}}","ts":"{{msg.message_id}}","text":"{{msg.content}}","mrkdwn":true}'
 
 hooks:
   on_receive:
