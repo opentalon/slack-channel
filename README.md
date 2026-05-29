@@ -150,7 +150,7 @@ profiles:
     metadata_headers:
       channel_id: X-Channel-Id     # which bot
       user_email: X-User-Email     # which user (by corp email)
-      user_name:  X-User-Name      # for logs/audit
+      user_name: X-User-Name       # for logs/audit
 ```
 
 Behaviour:

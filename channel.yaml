@@ -94,7 +94,7 @@ inbound:
       profile_token: "user"
       channel_id: "{{self.bot_user_id}}"
       user_email: "{{enrich.user.email}}"
-      user_name:  "{{enrich.user.real_name}}"
+      user_name: "{{enrich.user.real_name}}"
 
   media:
     - when: "files"
