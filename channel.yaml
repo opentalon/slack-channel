@@ -68,6 +68,7 @@ inbound:
     metadata:
       ts: "ts"
       profile_token: "user"
+      channel_id: "{{self.bot_user_id}}"
 
   media:
     - when: "files"
