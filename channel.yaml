@@ -11,14 +11,18 @@ capabilities:
   max_message_length: 4000
   response_format: slack
 
-required_env: [SLACK_APP_TOKEN, SLACK_BOT_TOKEN]
+# Credentials are read from per-instance config (see README) so a single
+# opentalon process can host multiple Slack bots, each with its own
+# workspace credentials. The {{config.*}} templates below pull from the
+# `channels.<name>.config` block in opentalon's config.yaml — values there
+# still support ${ENV_VAR} expansion, so secrets stay in env vars.
 
 init:
   - name: auth_test
     method: POST
     url: https://slack.com/api/auth.test
     headers:
-      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+      Authorization: "Bearer {{config.bot_token}}"
     store:
       bot_user_id: "user_id"
 
@@ -26,7 +30,7 @@ init:
     method: POST
     url: https://slack.com/api/apps.connections.open
     headers:
-      Authorization: "Bearer {{env.SLACK_APP_TOKEN}}"
+      Authorization: "Bearer {{config.app_token}}"
     store:
       ws_url: "url"
 
@@ -78,7 +82,7 @@ inbound:
         steps:
           - url: "{{event.files.0.url_private}}"
             headers:
-              Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+              Authorization: "Bearer {{config.bot_token}}"
 
   transforms:
     - type: replace
@@ -97,7 +101,7 @@ outbound:
     method: POST
     url: https://slack.com/api/chat.postMessage
     headers:
-      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+      Authorization: "Bearer {{config.bot_token}}"
       Content-Type: application/json
     body: '{"channel":"{{msg.conversation_id}}","text":"{{msg.content}}","thread_ts":"{{msg.thread_id}}","mrkdwn":true}'
   send_store_id: "ts"
@@ -105,7 +109,7 @@ outbound:
     method: POST
     url: https://slack.com/api/chat.update
     headers:
-      Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+      Authorization: "Bearer {{config.bot_token}}"
       Content-Type: application/json
     body: '{"channel":"{{msg.conversation_id}}","ts":"{{msg.message_id}}","text":"{{msg.content}}","mrkdwn":true}'
 
@@ -114,7 +118,7 @@ hooks:
     - method: POST
       url: https://slack.com/api/reactions.add
       headers:
-        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Authorization: "Bearer {{config.bot_token}}"
         Content-Type: application/json
       body: '{"channel":"{{event.conversation_id}}","timestamp":"{{event.metadata.ts}}","name":"{{config.ack_reaction}}"}'
       when: "{{config.ack_reaction}}"
@@ -122,14 +126,14 @@ hooks:
     - method: POST
       url: https://slack.com/api/reactions.remove
       headers:
-        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Authorization: "Bearer {{config.bot_token}}"
         Content-Type: application/json
       body: '{"channel":"{{msg.conversation_id}}","timestamp":"{{msg.metadata.ts}}","name":"{{config.ack_reaction}}"}'
       when: "{{config.ack_reaction}}"
     - method: POST
       url: https://slack.com/api/reactions.add
       headers:
-        Authorization: "Bearer {{env.SLACK_BOT_TOKEN}}"
+        Authorization: "Bearer {{config.bot_token}}"
         Content-Type: application/json
       body: '{"channel":"{{msg.conversation_id}}","timestamp":"{{msg.metadata.ts}}","name":"{{config.done_reaction}}"}'
       when: "{{config.done_reaction}}"

@@ -88,29 +88,58 @@ SLACK_BOT_TOKEN="xoxb-..."
 
 ### 3. Add to your OpenTalon config.yaml
 
-```yaml
-channels:
-  slack:
-    enabled: true
-    plugin: "./channels/slack/channel.yaml"
-    config:
-      ack_reaction: eyes              # react with this when message received
-      done_reaction: white_check_mark # react with this when response sent
-```
-
-Or use auto-fetch from GitHub:
+Credentials are passed via the per-instance `config:` block so a single
+opentalon process can run multiple Slack bots side-by-side. The values
+support `${ENV_VAR}` expansion, so secrets stay in env vars.
 
 ```yaml
 channels:
   slack:
     enabled: true
-    plugin: "./channels/slack/channel.yaml"
     github: "opentalon/slack-channel"
     ref: "master"
     config:
-      ack_reaction: eyes
-      done_reaction: white_check_mark
+      app_token: ${SLACK_APP_TOKEN}      # connection token (xapp-…)
+      bot_token: ${SLACK_BOT_TOKEN}      # bot user token (xoxb-…)
+      ack_reaction: eyes                  # optional: react when received
+      done_reaction: white_check_mark     # optional: react when answered
 ```
+
+### Multiple Slack bots in one OpenTalon process
+
+Each entry under `channels:` is a distinct bot. Give each a unique key
+(used for session/dedup/actor scoping) and its own credentials:
+
+```yaml
+channels:
+  slack-admin:
+    enabled: true
+    github: "opentalon/slack-channel"
+    ref: "master"
+    config:
+      app_token: ${SLACK_APP_TOKEN_ADMIN}
+      bot_token: ${SLACK_BOT_TOKEN_ADMIN}
+  slack-customer:
+    enabled: true
+    github: "opentalon/slack-channel"
+    ref: "master"
+    config:
+      app_token: ${SLACK_APP_TOKEN_CUSTOMER}
+      bot_token: ${SLACK_BOT_TOKEN_CUSTOMER}
+```
+
+Pair with opentalon's WhoAmI `metadata_headers` to give each bot its own
+permissions — the channel writes `msg.Metadata["channel_id"]` from its bot
+user ID, which opentalon forwards as an HTTP header so your WhoAmI server
+can branch on it.
+
+### Migrating from a single-bot setup
+
+Pre-multi-instance configs read credentials from `{{env.SLACK_*_TOKEN}}`
+directly inside `channel.yaml`. Move them into the `config:` block as
+shown above; the channel.yaml in this repo now reads `{{config.app_token}}`
+and `{{config.bot_token}}`. The env var names themselves stay the same
+because `${ENV_VAR}` expansion runs against the host's environment.
 
 ### 4. Run OpenTalon
 
