@@ -37,6 +37,7 @@ YAML-driven Slack channel for [OpenTalon](https://github.com/opentalon/opentalon
 | `reactions:read` | Read emoji reactions |
 | `reactions:write` | Add/remove emoji reactions |
 | `users:read` | Look up users by name/ID |
+| `users:read.email` | Read user email addresses — required for inbound enrichment (forwards `X-User-Email` to WhoAmI) |
 
 ### Event Subscriptions
 
@@ -132,6 +133,40 @@ Pair with opentalon's WhoAmI `metadata_headers` to give each bot its own
 permissions — the channel writes `msg.Metadata["channel_id"]` from its bot
 user ID, which opentalon forwards as an HTTP header so your WhoAmI server
 can branch on it.
+
+### Inbound enrichment: sender email → WhoAmI
+
+Every inbound message triggers a `users.info` lookup to fetch the sender's
+profile email and display name. The results land in `msg.Metadata` as
+`user_email` and `user_name`, which opentalon's WhoAmI `metadata_headers`
+config forwards as HTTP headers (e.g. `X-User-Email`). This lets a WhoAmI
+server identify users by their corporate email regardless of which Slack
+workspace or bot installation the message came through.
+
+```yaml
+# opentalon config.yaml
+profiles:
+  who_am_i:
+    metadata_headers:
+      channel_id: X-Channel-Id     # which bot
+      user_email: X-User-Email     # which user (by corp email)
+      user_name:  X-User-Name      # for logs/audit
+```
+
+Behaviour:
+- **Caching**: lookups are cached for 1h per sender (default; tunable via
+  `inbound.enrich.user.cache.ttl` in `channel.yaml`). With Redis configured
+  in opentalon, the cache is shared across pods and survives restarts;
+  without Redis, an in-memory cache is used instead.
+- **Fail-closed**: if `users.info` errors out or the response is missing
+  the email (e.g. the bot lacks `users:read.email`), the message is
+  rejected with a user-visible error `"We couldn't verify your account
+  info right now. Please try again in a moment."` This prevents WhoAmI
+  from seeing half-known identities. Make sure the scope is granted before
+  rolling this out to production.
+- **Performance**: cold lookup adds ~100-300ms latency; cache hits are
+  sub-millisecond. Slack's `users.info` is tier-2 rate-limited at ~20
+  req/min/workspace, which is fine with caching enabled.
 
 ### Migrating from a single-bot setup
 
